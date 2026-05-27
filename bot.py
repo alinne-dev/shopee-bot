@@ -1,13 +1,13 @@
 import os
 import telebot
-import anthropic
+from groq import Groq
 
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 CHANNEL_ID = os.environ.get('CHANNEL_ID')
-ANTHROPIC_KEY = os.environ.get('ANTHROPIC_KEY')
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
 
 bot = telebot.TeleBot(BOT_TOKEN)
-client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
+client = Groq(api_key=GROQ_API_KEY)
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -18,15 +18,14 @@ def handle_link(message):
     link = message.text
     if 'shopee' in link.lower():
         bot.reply_to(message, "⏳ Gerando legenda...")
-        response = client.messages.create(
-            model="claude-opus-4-20250514",
-            max_tokens=500,
+        response = client.chat.completions.create(
+            model="llama3-8b-8192",
             messages=[{
                 "role": "user",
                 "content": f"Crie uma legenda curta e atrativa para divulgar esse produto da Shopee como afiliado. Use emojis, destaque o desconto e coloque o link no final. Link: {link}"
             }]
         )
-        legenda = response.content[0].text
+        legenda = response.choices[0].message.content
         bot.send_message(CHANNEL_ID, legenda)
         bot.reply_to(message, "✅ Postado no canal!")
     else:
