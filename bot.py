@@ -109,19 +109,30 @@ def agendar_posts():
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.reply_to(message, "Bot ativo! Me manda o link do produto Shopee ou aguarde os posts automáticos!")
+    bot.reply_to(message, "Bot ativo! Me manda o nome e link do produto Shopee ou aguarde os posts automáticos!")
 
 @bot.message_handler(func=lambda message: True)
 def handle_link(message):
-    link = message.text
-    if 'shopee' in link.lower():
-        bot.reply_to(message, "⏳ Identificando produto e gerando legenda premium...")
-        nome_produto, url_real = decodificar_link_shopee(link)
+    texto = message.text
+    linhas = texto.strip().split('\n')
+    
+    if len(linhas) >= 2 and 'shopee' in linhas[-1].lower():
+        nome_produto = linhas[0].strip()
+        link = linhas[-1].strip()
+        bot.reply_to(message, "⏳ Gerando legenda premium...")
         legenda = gerar_legenda(nome_produto, link)
         bot.send_message(CHANNEL_ID, legenda)
+        bot.reply_to(message, f"✅ Postado no canal!\n\nProduto: {nome_produto}")
+    
+    elif 'shopee' in texto.lower():
+        bot.reply_to(message, "⏳ Identificando produto e gerando legenda premium...")
+        nome_produto, url_real = decodificar_link_shopee(texto)
+        legenda = gerar_legenda(nome_produto, texto)
+        bot.send_message(CHANNEL_ID, legenda)
         bot.reply_to(message, f"✅ Postado no canal!\n\nProduto identificado: {nome_produto}")
+    
     else:
-        bot.reply_to(message, "Por favor, mande um link válido da Shopee.")
+        bot.reply_to(message, "Por favor, mande assim:\n\nNome do produto\nhttps://link-shopee.com.br")
 
 agendador = threading.Thread(target=agendar_posts)
 agendador.daemon = True
