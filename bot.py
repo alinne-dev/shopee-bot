@@ -9,6 +9,7 @@ from groq import Groq
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 CHANNEL_ID = os.environ.get('CHANNEL_ID')
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
+MEU_ID = 6688691337
 
 bot = telebot.TeleBot(BOT_TOKEN)
 client = Groq(api_key=GROQ_API_KEY)
@@ -51,6 +52,7 @@ def postar_automatico():
         produto = produtos[0]
         legenda = gerar_legenda(produto)
         bot.send_message(CHANNEL_ID, legenda)
+        bot.send_message(MEU_ID, f"✅ Post automático feito!\n\n{legenda}")
 
 def agendar_posts():
     schedule.every().day.at("09:00").do(postar_automatico)
