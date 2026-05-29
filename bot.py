@@ -9,7 +9,7 @@ CHANNEL_ID = os.environ.get('CHANNEL_ID')
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
 MEU_ID = 6688691337
 
-bot = telebot.TeleBot(BOT_TOKEN)
+bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 client = Groq(api_key=GROQ_API_KEY)
 
 PRODUTOS = [
@@ -107,4 +107,4 @@ scheduler.start()
 print("✅ Bot iniciado com agendamento automático!")
 print("⏰ Posts agendados: 9h, 12h, 18h e 21h")
 
-bot.infinity_polling()
+bot.infinity_polling(timeout=60, long_polling_timeout=60)
