@@ -69,7 +69,7 @@ def buscar_produtos():
             shopid = info.get("shopid")
             link = f"https://shopee.com.br/product/{shopid}/{itemid}"
             
-            # NOVO: Coleta a imagem oficial do produto direto da API
+            # Puxa o ID da imagem direto do banco de dados da Shopee
             imagem_id = info.get("image")
             url_foto = f"https://down-br.img.sstd.com/photo/{imagem_id}" if imagem_id else None
             
@@ -102,7 +102,7 @@ def postar_automatico():
         produto = produtos[0]
         legenda = gerar_legenda(produto['nome'], produto['link'])
         
-        # Se encontrou a imagem na API, posta como FOTO + LEGENDA. Se falhar, manda texto puro.
+        # Posta a foto real com a legenda fina da Groq acoplada. Se falhar, manda texto.
         if produto.get('foto'):
             bot.send_photo(CHANNEL_ID, produto['foto'], caption=legenda)
         else:
@@ -131,13 +131,7 @@ def handle_link(message):
     if len(linhas) >= 2 and 'shopee' in linhas[-1].lower():
         nome_produto = linhas[0].strip()
         link = linhas[-1].strip()
-        bot.reply_to(message, "⏳ Gerando legenda premium com imagem...")
-        
-        # Tenta decodificar para coletar a imagem interna da Shopee a partir do link manual
-        _, url_real = decodificar_link_shopee(link)
-        
-        # Como o link manual não traz a API de busca direto, tentamos usar o padrão de imagem se o link contiver os IDs
-        # Caso contrário, postamos o formato padrão que ativa o preview nativo do Telegram
+        bot.reply_to(message, "⏳ Gerando legenda premium...")
         legenda = gerar_legenda(nome_produto, link)
         bot.send_message(CHANNEL_ID, legenda)
         bot.reply_to(message, f"✅ Postado no canal!\n\nProduto: {nome_produto}")
