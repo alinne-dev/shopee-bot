@@ -1,12 +1,9 @@
 import os
-import telebot
-import schedule
-import time
-import threading
-import requests
+import json
 import random
-from urllib.parse import unquote
+import telebot
 from groq import Groq
+from apscheduler.schedulers.background import BackgroundScheduler
 
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 CHANNEL_ID = os.environ.get('CHANNEL_ID')
@@ -17,137 +14,95 @@ bot = telebot.TeleBot(BOT_TOKEN)
 client = Groq(api_key=GROQ_API_KEY)
 
 PROMPT_SISTEMA = """Você é a copywriter oficial da marca 'Linne Indica'.
-Seu tom de voz é de uma criadora de conteúdo de beleza e estética sofisticada, falando de forma informal, mas muito elegante com suas seguidoras.
-O seu nicho é 'Achadinhos que parecem caros'.
+Seu tom é sofisticado, informal e elegante.
+Nicho: Achadinhos que parecem caros mas são acessíveis.
 
-REGRAS ABSOLUTAS:
-1. NUNCA use termos bregas como 'OFERTA IMPERDÍVEL', 'Economize grande', 'Compre agora mesmo' ou excesso de caixa alta.
-2. Você DEVE citar o nome exato do produto recebido no primeiro parágrafo. NUNCA invente ou substitua o produto por outro.
-3. A copy deve ser natural, parecendo uma mensagem de WhatsApp de uma amiga que encontrou algo incrível.
-4. Não use listas genéricas de características técnicas. Venda o DESEJO, a estética e o resultado do produto.
-5. O texto deve ser curto (máximo de 3 parágrafos pequenos).
-6. Posicione o link do produto de forma clara no final da mensagem."""
+REGRAS:
+1. NUNCA use 'OFERTA IMPERDÍVEL' ou termos bregas
+2. Cite o nome exato do produto no primeiro parágrafo
+3. Escreva como uma amiga recomendando algo incrível
+4. Foque no desejo e resultado, não em especificações
+5. Máximo 3 parágrafos curtos
+6. Link sempre no final"""
 
-ANGULOS_DE_VENDA = [
-    "Foco em estética premium. Use um tom de 'segredo entre amigas' sobre um produto que parece caro, mas é super acessível.",
-    "Foco na escassez inteligente. Comente de forma elegante que o estoque na Shopee costuma esgotar rápido para produtos desse nível.",
-    "Foco no custo-benefício. Destaque como essa é uma compra inteligente para quem gosta de se cuidar sem rasgar dinheiro.",
-    "Foco em resenha rápida. Haja como se tivesse testado e aprovado a qualidade do produto."
+ANGULOS = [
+    "Foco em estética premium — 'segredo entre amigas'",
+    "Foco em escassez — estoque costuma esgotar rápido",
+    "Foco em custo-benefício — compra inteligente",
+    "Foco em resenha — como se tivesse testado",
 ]
 
-def decodificar_link_shopee(url_curta):
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+def carregar_produtos():
     try:
-        response = requests.get(url_curta, headers=headers, allow_redirects=True, timeout=10)
-        url_real = response.url
-        if "-i." in url_real:
-            slug = url_real.split("/")[-1].split("-i.")[0]
-            nome_produto = unquote(slug).replace("-", " ")
-            return nome_produto, url_real
-        elif "product/" in url_real:
-            return "Achadinho especial", url_real
-        return "Produto especial", url_real
+        with open("produtos.json", "r", encoding="utf-8") as f:
+            return json.load(f)
     except Exception as e:
-        print(f"Erro ao decodificar link: {e}")
-        return "Produto", url_curta
-
-def buscar_produtos():
-    url = "https://shopee.com.br/api/v4/search/search_items/?by=sales&limit=5&newest=0&order=desc&page_type=search&scenario=PAGE_GLOBAL_SEARCH&version=2"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Referer": "https://shopee.com.br/"
-    }
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        data = response.json()
-        items = data.get("items", [])
-        produtos = []
-        for item in items[:5]:
-            info = item.get("item_basic", {})
-            nome = info.get("name", "Produto")
-            itemid = info.get("itemid")
-            shopid = info.get("shopid")
-            link = f"https://shopee.com.br/product/{shopid}/{itemid}"
-            
-            # Puxa o ID da imagem direto do banco de dados da Shopee
-            imagem_id = info.get("image")
-            url_foto = f"https://down-br.img.sstd.com/photo/{imagem_id}" if imagem_id else None
-            
-            produtos.append({"nome": nome, "link": link, "foto": url_foto})
-        return produtos
-    except Exception as e:
-        print(f"Erro ao buscar produtos: {e}")
+        print(f"Erro ao carregar produtos: {e}")
         return []
 
 def gerar_legenda(nome_produto, link_produto):
-    angulo_escolhido = random.choice(ANGULOS_DE_VENDA)
-    prompt_usuario = f"Escreva a copy para este produto específico. {angulo_escolhido}\n\nProduto: {nome_produto}\nLink: {link_produto}\n\nLembre-se: fale SOMENTE sobre o produto acima, nunca substitua por outro."
+    angulo = random.choice(ANGULOS)
+    prompt = (f"Escreva a copy para: {angulo}\n\n"
+              f"Produto: {nome_produto}\nLink: {link_produto}\n\n"
+              f"Fale SOMENTE sobre este produto.")
     try:
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": PROMPT_SISTEMA},
-                {"role": "user", "content": prompt_usuario}
+                {"role": "user", "content": prompt}
             ],
             temperature=0.5
         )
         return response.choices[0].message.content
     except Exception as e:
-        print(f"Erro na API Groq: {e}")
-        return f"✨ Olha que achado incrível! {nome_produto} por um preço que você não vai acreditar.\n\n🔗 {link_produto}"
+        print(f"Erro na IA: {e}")
+        return f"✨ Olha esse achado! {nome_produto}\n\n🔗 {link_produto}"
 
 def postar_automatico():
-    produtos = buscar_produtos()
+    print("Iniciando post automático...")
+    produtos = carregar_produtos()
     if produtos:
-        produto = produtos[0]
+        produto = random.choice(produtos)
+        print(f"Produto escolhido: {produto['nome']}")
         legenda = gerar_legenda(produto['nome'], produto['link'])
-        
-        # Posta a foto real com a legenda fina da Groq acoplada. Se falhar, manda texto.
-        if produto.get('foto'):
-            bot.send_photo(CHANNEL_ID, produto['foto'], caption=legenda)
-        else:
-            bot.send_message(CHANNEL_ID, legenda)
-            
+        bot.send_message(CHANNEL_ID, legenda)
         bot.send_message(MEU_ID, f"✅ Post automático feito!\n\n{legenda}")
-
-def agendar_posts():
-    schedule.every().day.at("09:00").do(postar_automatico)
-    schedule.every().day.at("12:00").do(postar_automatico)
-    schedule.every().day.at("18:00").do(postar_automatico)
-    schedule.every().day.at("21:00").do(postar_automatico)
-    while True:
-        schedule.run_pending()
-        time.sleep(60)
+        print("Post realizado com sucesso!")
+    else:
+        print("Nenhum produto encontrado no JSON!")
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.reply_to(message, "Bot ativo! Me manda o nome e link do produto Shopee ou aguarde os posts automáticos!")
+    bot.reply_to(message, "Bot ativo! Me manda:\n\nNome do produto\nhttps://link-shopee.com.br")
+
+@bot.message_handler(commands=['postar'])
+def postar_agora(message):
+    bot.reply_to(message, "⏳ Postando agora...")
+    postar_automatico()
 
 @bot.message_handler(func=lambda message: True)
 def handle_link(message):
     texto = message.text
     linhas = texto.strip().split('\n')
-    
     if len(linhas) >= 2 and 'shopee' in linhas[-1].lower():
-        nome_produto = linhas[0].strip()
+        nome = linhas[0].strip()
         link = linhas[-1].strip()
         bot.reply_to(message, "⏳ Gerando legenda premium...")
-        legenda = gerar_legenda(nome_produto, link)
+        legenda = gerar_legenda(nome, link)
         bot.send_message(CHANNEL_ID, legenda)
-        bot.reply_to(message, f"✅ Postado no canal!\n\nProduto: {nome_produto}")
-        
-    elif 'shopee' in texto.lower():
-        bot.reply_to(message, "⏳ Identificando produto e gerando legenda premium...")
-        nome_produto, url_real = decodificar_link_shopee(texto)
-        legenda = gerar_legenda(nome_produto, texto)
-        bot.send_message(CHANNEL_ID, legenda)
-        bot.reply_to(message, f"✅ Postado no canal!\n\nProduto identificado: {nome_produto}")
-        
+        bot.reply_to(message, f"✅ Postado!\n\nProduto: {nome}")
     else:
-        bot.reply_to(message, "Por favor, mande assim:\n\nNome do produto\nhttps://link-shopee.com.br")
+        bot.reply_to(message, "Mande assim:\n\nNome do produto\nhttps://link-shopee.com.br")
 
-agendador = threading.Thread(target=agendar_posts)
-agendador.daemon = True
-agendador.start()
+scheduler = BackgroundScheduler()
+scheduler.add_job(postar_automatico, 'cron', hour=9, minute=0)
+scheduler.add_job(postar_automatico, 'cron', hour=12, minute=0)
+scheduler.add_job(postar_automatico, 'cron', hour=18, minute=0)
+scheduler.add_job(postar_automatico, 'cron', hour=21, minute=0)
+scheduler.start()
 
-bot.polling()
+print("✅ Bot iniciado com agendamento automático!")
+print("⏰ Posts agendados: 9h, 12h, 18h e 21h")
+
+bot.infinity_polling()
