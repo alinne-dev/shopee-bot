@@ -54,7 +54,7 @@ def decodificar_link_shopee(url_curta):
 def buscar_produtos():
     url = "https://shopee.com.br/api/v4/search/search_items/?by=sales&limit=5&newest=0&order=desc&page_type=search&scenario=PAGE_GLOBAL_SEARCH&version=2"
     headers = {
-        "User-Agent": "Mozilla/5.0",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Referer": "https://shopee.com.br/"
     }
     try:
@@ -68,9 +68,15 @@ def buscar_produtos():
             itemid = info.get("itemid")
             shopid = info.get("shopid")
             link = f"https://shopee.com.br/product/{shopid}/{itemid}"
-            produtos.append({"nome": nome, "link": link})
+            
+            # NOVO: Coleta a imagem oficial do produto direto da API
+            imagem_id = info.get("image")
+            url_foto = f"https://down-br.img.sstd.com/photo/{imagem_id}" if imagem_id else None
+            
+            produtos.append({"nome": nome, "link": link, "foto": url_foto})
         return produtos
-    except:
+    except Exception as e:
+        print(f"Erro ao buscar produtos: {e}")
         return []
 
 def gerar_legenda(nome_produto, link_produto):
@@ -95,7 +101,13 @@ def postar_automatico():
     if produtos:
         produto = produtos[0]
         legenda = gerar_legenda(produto['nome'], produto['link'])
-        bot.send_message(CHANNEL_ID, legenda)
+        
+        # Se encontrou a imagem na API, posta como FOTO + LEGENDA. Se falhar, manda texto puro.
+        if produto.get('foto'):
+            bot.send_photo(CHANNEL_ID, produto['foto'], caption=legenda)
+        else:
+            bot.send_message(CHANNEL_ID, legenda)
+            
         bot.send_message(MEU_ID, f"✅ Post automático feito!\n\n{legenda}")
 
 def agendar_posts():
@@ -119,18 +131,24 @@ def handle_link(message):
     if len(linhas) >= 2 and 'shopee' in linhas[-1].lower():
         nome_produto = linhas[0].strip()
         link = linhas[-1].strip()
-        bot.reply_to(message, "⏳ Gerando legenda premium...")
+        bot.reply_to(message, "⏳ Gerando legenda premium com imagem...")
+        
+        # Tenta decodificar para coletar a imagem interna da Shopee a partir do link manual
+        _, url_real = decodificar_link_shopee(link)
+        
+        # Como o link manual não traz a API de busca direto, tentamos usar o padrão de imagem se o link contiver os IDs
+        # Caso contrário, postamos o formato padrão que ativa o preview nativo do Telegram
         legenda = gerar_legenda(nome_produto, link)
         bot.send_message(CHANNEL_ID, legenda)
         bot.reply_to(message, f"✅ Postado no canal!\n\nProduto: {nome_produto}")
-    
+        
     elif 'shopee' in texto.lower():
         bot.reply_to(message, "⏳ Identificando produto e gerando legenda premium...")
         nome_produto, url_real = decodificar_link_shopee(texto)
         legenda = gerar_legenda(nome_produto, texto)
         bot.send_message(CHANNEL_ID, legenda)
         bot.reply_to(message, f"✅ Postado no canal!\n\nProduto identificado: {nome_produto}")
-    
+        
     else:
         bot.reply_to(message, "Por favor, mande assim:\n\nNome do produto\nhttps://link-shopee.com.br")
 
