@@ -1,5 +1,4 @@
 import os
-import json
 import random
 import telebot
 from groq import Groq
@@ -12,6 +11,21 @@ MEU_ID = 6688691337
 
 bot = telebot.TeleBot(BOT_TOKEN)
 client = Groq(api_key=GROQ_API_KEY)
+
+PRODUTOS = [
+    {
+        "nome": "Short Jeans Feminino Brasil – Lançamento Copa do Mundo",
+        "link": "https://s.shopee.com.br/5L98HH23e1"
+    },
+    {
+        "nome": "Escova Secadora 5 em 1 Pente de Ar Quente com Bocal de Secagem e Barris de Cachos",
+        "link": "https://s.shopee.com.br/9fI7RIB1U4"
+    },
+    {
+        "nome": "Blush Compacto Efeito Natural Melu By Ruby Rose 10g",
+        "link": "https://s.shopee.com.br/3B4dhQt7yo"
+    }
+]
 
 PROMPT_SISTEMA = """Você é a copywriter oficial da marca 'Linne Indica'.
 Seu tom é sofisticado, informal e elegante.
@@ -31,14 +45,6 @@ ANGULOS = [
     "Foco em custo-benefício — compra inteligente",
     "Foco em resenha — como se tivesse testado",
 ]
-
-def carregar_produtos():
-    try:
-        with open("produtos.json", "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception as e:
-        print(f"Erro ao carregar produtos: {e}")
-        return []
 
 def gerar_legenda(nome_produto, link_produto):
     angulo = random.choice(ANGULOS)
@@ -61,16 +67,12 @@ def gerar_legenda(nome_produto, link_produto):
 
 def postar_automatico():
     print("Iniciando post automático...")
-    produtos = carregar_produtos()
-    if produtos:
-        produto = random.choice(produtos)
-        print(f"Produto escolhido: {produto['nome']}")
-        legenda = gerar_legenda(produto['nome'], produto['link'])
-        bot.send_message(CHANNEL_ID, legenda)
-        bot.send_message(MEU_ID, f"✅ Post automático feito!\n\n{legenda}")
-        print("Post realizado com sucesso!")
-    else:
-        print("Nenhum produto encontrado no JSON!")
+    produto = random.choice(PRODUTOS)
+    print(f"Produto escolhido: {produto['nome']}")
+    legenda = gerar_legenda(produto['nome'], produto['link'])
+    bot.send_message(CHANNEL_ID, legenda)
+    bot.send_message(MEU_ID, f"✅ Post automático feito!\n\n{legenda}")
+    print("Post realizado com sucesso!")
 
 @bot.message_handler(commands=['start'])
 def start(message):
