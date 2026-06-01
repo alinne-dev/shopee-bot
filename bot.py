@@ -1,4 +1,5 @@
 import os
+import json
 import random
 import telebot
 from groq import Groq
@@ -11,40 +12,36 @@ GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
 bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 client = Groq(api_key=GROQ_API_KEY)
 
-PRODUTOS = [
-    {
-        "nome": "Short Jeans Feminino Brasil – Lançamento Copa do Mundo",
-        "link": "https://s.shopee.com.br/5L98HH23e1"
-    },
-    {
-        "nome": "Escova Secadora 5 em 1 Pente de Ar Quente com Bocal de Secagem e Barris de Cachos",
-        "link": "https://s.shopee.com.br/9fI7RIB1U4"
-    },
-    {
-        "nome": "Blush Compacto Efeito Natural Melu By Ruby Rose 10g",
-        "link": "https://s.shopee.com.br/3B4dhQt7yo"
-    }
-]
+def carregar_produtos():
+    try:
+        with open('produtos.json', 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"❌ Erro ao carregar produtos: {e}")
+        return []
+
+PRODUTOS = carregar_produtos()
 
 PROMPT_SISTEMA = """Você é a copywriter oficial da marca 'Linne Indica'.
 
-Seu tom é sofisticado, informal e elegante.
-Nicho: Achadinhos que parecem caros mas são acessíveis.
+Tom: sofisticado, informal, elegante. Como uma amiga que faz curadoria de achados.
 
-REGRAS:
-1. NUNCA use 'OFERTA IMPERDÍVEL' ou termos bregas
-2. Cite o nome exato do produto no primeiro parágrafo
-3. Escreva como uma amiga recomendando algo incrível
-4. Foque no desejo e resultado, não em especificações
-5. Máximo 3 parágrafos curtos
-6. Link sempre no final
+REGRAS OBRIGATÓRIAS:
+1. Máximo 4 linhas no total
+2. Máximo 300 caracteres (sem contar o link)
+3. Máximo 2 emojis por post
+4. NUNCA comece duas legendas com a mesma frase
+5. NUNCA use: imperdível, corre, últimas unidades, oferta
+6. Link sempre na última linha, precedido de 🛍️ Confira aqui:
+7. Formato: abertura + 1 linha de benefício + link
 """
 
 ANGULOS = [
-    "Foco em estética premium — segredo entre amigas",
-    "Foco em escassez — estoque costuma esgotar rápido",
-    "Foco em custo-benefício — compra inteligente",
-    "Foco em resenha — como se tivesse testado"
+    "Curiosidade — comece gerando surpresa sobre o produto",
+    "Sensação — descreva como ele transforma o ambiente ou a rotina",
+    "Problema — mencione uma dor comum que esse produto resolve",
+    "Estética — foque no visual e no aspecto sofisticado",
+    "Rotina — mostre como ele torna o dia a dia mais prático"
 ]
 
 def gerar_legenda(nome_produto, link_produto):
@@ -137,44 +134,24 @@ def handle_link(message):
 
 scheduler = BackgroundScheduler()
 
-scheduler.add_job(
-    postar_automatico,
-    'cron',
-    hour=9,
-    minute=0
-)
-
-scheduler.add_job(
-    postar_automatico,
-    'cron',
-    hour=12,
-    minute=0
-)
-
-scheduler.add_job(
-    postar_automatico,
-    'cron',
-    hour=18,
-    minute=0
-)
-
-scheduler.add_job(
-    postar_automatico,
-    'cron',
-    hour=21,
-    minute=0
-)
+scheduler.add_job(postar_automatico, 'cron', hour=9, minute=0)
+scheduler.add_job(postar_automatico, 'cron', hour=12, minute=0)
+scheduler.add_job(postar_automatico, 'cron', hour=18, minute=0)
+scheduler.add_job(postar_automatico, 'cron', hour=21, minute=0)
 
 scheduler.start()
 
 print("✅ Bot iniciado com agendamento automático!")
 print("⏰ Posts agendados: 09:00, 12:00, 18:00 e 21:00")
 
-try:
-    bot.infinity_polling(
-        timeout=60,
-        long_polling_timeout=60,
-        skip_pending=True
-    )
-except Exception as e:
-    print(f"❌ Erro no polling: {e}")
+while True:
+    try:
+        bot.infinity_polling(
+            timeout=60,
+            long_polling_timeout=60,
+            skip_pending=True
+        )
+    except Exception as e:
+        print(f"❌ Erro no polling, reconectando em 5s: {e}")
+        import time
+        time.sleep(5)
