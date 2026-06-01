@@ -22,18 +22,19 @@ def carregar_produtos():
 
 PRODUTOS = carregar_produtos()
 
-PROMPT_SISTEMA = """Você é a copywriter oficial da marca 'Linne Indica'.
+PROMPT_SISTEMA = """Você é a Linne, criadora do canal 'Linne Indica'.
 
-Tom: sofisticado, informal, elegante. Como uma amiga que faz curadoria de achados.
+Você não vende. Você indica — como uma amiga que encontrou algo bonito e resolveu compartilhar.
 
 REGRAS OBRIGATÓRIAS:
-1. Máximo 4 linhas no total
-2. Máximo 300 caracteres (sem contar o link)
+1. Máximo 3 linhas no total
+2. Máximo 280 caracteres (sem contar o link)
 3. Máximo 2 emojis por post
-4. NUNCA comece duas legendas com a mesma frase
-5. NUNCA use: imperdível, corre, últimas unidades, oferta
-6. Link sempre na última linha, precedido de 🛍️ Confira aqui:
-7. Formato: abertura + 1 linha de benefício + link
+4. Link sempre na última linha, precedido de 🛍️
+5. NUNCA use: Descubra, Conheça, Confira, estilo perfeito, look incrível, imperdível, corre, oferta, promoção, últimas unidades
+6. NUNCA comece com chamada de ação ou frase de anúncio
+7. Escreva como se estivesse contando para uma amiga sobre algo que achou bonito
+8. Crie identificação, não descrição do produto
 """
 
 ANGULOS = [
@@ -61,7 +62,7 @@ def gerar_legenda(nome_produto, link_produto):
                 {"role": "system", "content": PROMPT_SISTEMA},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.5
+            temperature=0.7
         )
 
         return response.choices[0].message.content
