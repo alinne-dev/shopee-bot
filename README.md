@@ -1,4 +1,5 @@
 Smart Curator Bot
+
 Sistema de curadoria automatizada para nicho de beleza e afiliados. O bot gerencia uma base de dados de produtos e realiza postagens agendadas de forma orgânica no Telegram.
 
  O que este projeto faz
