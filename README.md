@@ -7,7 +7,7 @@ Sistema de curadoria automatizada para o nicho de beleza e afiliados. O bot gere
 ## 📸 Demonstração
 
 <div align="center">
-  <img width="373" height="606" alt="Chat com o Bot" src="https://github.com/user-attachments/assets/71e23b3d-4ddf-462d-9ff6-7c42b9c0c0ce" />
+  <img width="373" height="606" alt="Chat com o Bot" src="https://github.com/user-attachments/assets/cade049b-cf57-4ba2-b2cc-4773177f473e" />
   <img width="379" height="658" alt="Post no Canal" src="https://github.com/user-attachments/assets/a4fffbfb-d18c-4f76-9f32-eaf877a4c6fd" />
 </div>
 
