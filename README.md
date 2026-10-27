@@ -2,7 +2,7 @@
 
 Sistema de curadoria automatizada para nicho de beleza e afiliados. O bot gerencia uma base de dados de produtos e realiza postagens agendadas de forma orgânica no Telegram, utilizando IA para gerar conteúdo natural.
 
-> **Status:** 🟢 Em produção (Deploy ativo na Railway) | **[Link para testar o Bot](#)** *(adicione o link do seu bot aqui)*
+> > **Status:** 🟢 Em produção (Deploy ativo na Railway) | **[Clique aqui para ver o Bot em ação no Canal](https://t.me/ofertasinteligentesag)**
 
 ## 🚀 O que este projeto faz
 - **Gestão de Curadoria:** Processa uma lista de produtos estruturada em `produtos.json`, garantindo que o feed esteja sempre atualizado.
