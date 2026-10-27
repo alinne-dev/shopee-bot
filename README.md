@@ -29,4 +29,13 @@ Para rodar este projeto na sua máquina, siga os passos abaixo:
 1. Clone o repositório:
    ```bash
    git clone https://github.com/alInne-dev/shopee-bot.git
-   
+   2. Instale as dependências:
+
+2. pip install -r requisitos.txt
+
+3. Configure as variáveis de ambiente (crie um arquivo .env na raiz do projeto):
+TELEGRAM_TOKEN=seu_token_aqui
+GROQ_API_KEY=sua_chave_aqui
+
+4. Execute o bot:
+python bot.py
